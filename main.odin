@@ -7,7 +7,7 @@ import "core:strings"
 songs: map[i32]string
 
 main :: proc() {
-	load_fingerprints()
+	index_songs()
 	fmt.printfln("Indexed %v songs", len(songs))
 	fmt.println("Recording for 5 seconds...\n")
 
@@ -24,7 +24,7 @@ main :: proc() {
 	}
 }
 
-load_fingerprints :: proc() {
+index_songs :: proc() {
 	w := os.walker_create("songs")
 	defer os.walker_destroy(&w)
 
