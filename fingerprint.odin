@@ -41,7 +41,6 @@ index_peaks :: proc(id: u32, peaks: []Peak) {
 recognize_peaks :: proc(peaks: []Peak) {
 	candidates := make([dynamic]Entry)
 
-	FAN_OUT :: 5
 	for p1, i in peaks {
 		for p2 in peaks[i + 1:] {
 			dt := p2.time - p1.time
