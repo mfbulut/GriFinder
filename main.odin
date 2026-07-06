@@ -4,7 +4,7 @@ import "core:os"
 import "core:fmt"
 import "core:strings"
 
-songs: map[u32]string
+songs: map[i32]string
 
 main :: proc() {
 	load_fingerprints()
@@ -18,7 +18,7 @@ main :: proc() {
 
 	fmt.println("Top matches:")
 	for m, i in matches {
-		if i >= 10 do continue
+		if i >= 30 do continue
 		seconds := m.entry.time * HOP_SIZE / SAMPLE_RATE
 		fmt.printfln("%v (at %02d:%02d) %v matches", songs[m.entry.id], seconds / 60, seconds % 60, m.count)
 	}
@@ -28,7 +28,7 @@ load_fingerprints :: proc() {
 	w := os.walker_create("songs")
 	defer os.walker_destroy(&w)
 
-	id := u32(1)
+	id := i32(1)
 	for info in os.walker_walk(&w) {
 		songs[id] = strings.clone(info.name)
 		samples := audio_decode(info.fullpath)

@@ -1,9 +1,10 @@
 package main
+
 import "core:fmt"
 import "core:slice"
 
 Entry :: struct {
-	id:   u32,
+	id:   i32,
 	time: i32,
 }
 
@@ -13,21 +14,25 @@ Key :: bit_field u32 {
 	dt: u32 | 8,
 }
 
-database: map[Key]Entry
+database: map[Key][dynamic]Entry
 
-index_peaks :: proc(id: u32, peaks: []Peak) {
+index_peaks :: proc(id: i32, peaks: []Peak) {
 	for p1, i in peaks {
 		for p2 in peaks[i + 1:] {
 			dt := p2.time - p1.time
 			if dt > 100 do break
 
-			key := Key{
+			key := Key {
 				f1 = p1.freq,
 				f2 = p2.freq,
 				dt = dt,
 			}
 
-			database[key] = Entry{id = id, time = i32(p1.time)}
+			if key not_in database {
+				database[key] = make([dynamic]Entry)
+			}
+
+			append(&database[key], Entry{id = id, time = i32(p1.time)})
 		}
 	}
 }
@@ -45,17 +50,19 @@ recognize_peaks :: proc(peaks: []Peak) -> []Match {
 			dt := p2.time - p1.time
 			if dt > 100 do break
 
-			key := Key{
+			key := Key {
 				f1 = p1.freq,
 				f2 = p2.freq,
 				dt = dt,
 			}
 
-			if entry, ok := database[key]; ok {
-				append(&candidates, Entry{
-					id   = entry.id,
-					time = i32(entry.time) - i32(p1.time),
-				})
+			if entries, ok := database[key]; ok {
+				for entry in entries {
+					append(&candidates, Entry{
+						id = entry.id,
+						time = i32(entry.time) - i32(p1.time),
+					})
+				}
 			}
 		}
 	}
@@ -71,7 +78,7 @@ recognize_peaks :: proc(peaks: []Peak) -> []Match {
 		current := candidates[i]
 		start := i
 
-		for i < len(candidates) && candidates[i].id == current.id && candidates[i].time - current.time <= 3 {
+		for i < len(candidates) && candidates[i].id == current.id && candidates[i].time - current.time <= 5 {
 			i += 1
 		}
 
