@@ -18,7 +18,7 @@ main :: proc() {
 
 	fmt.println("Top matches:")
 	for m, i in matches {
-		if i >= 30 do continue
+		if i >= 10 do continue
 		seconds := m.entry.time * HOP_SIZE / SAMPLE_RATE
 		fmt.printfln("%v (at %02d:%02d) %v matches", songs[m.entry.id], seconds / 60, seconds % 60, m.count)
 	}

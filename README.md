@@ -1,10 +1,10 @@
 # GriFinder
 
-An music recognition experiment.
+An music recognition experiment
 
 ## Usage
 
-1. Put songs (mp3, flac, wav) into the `songs` directory.
+1. Put songs (mp3, flac, wav) into the `songs` directory
 2. Run the program using:
    ```bash
    odin run . -o:speed -no-bounds-check -microarch:native
@@ -20,4 +20,4 @@ In the future, `GriFinder` may be integrated as a feature into [**GriPlayer**](h
 
 ## Acknowledgments & Inspiration
 
-This project drew reference and inspiration from [seek-tune](https://github.com/cgzirim/seek-tune).
+This project drew reference and inspiration from [seek-tune](https://github.com/cgzirim/seek-tune)

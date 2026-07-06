@@ -20,7 +20,8 @@ index_peaks :: proc(id: i32, peaks: []Peak) {
 	for p1, i in peaks {
 		for p2 in peaks[i + 1:] {
 			dt := p2.time - p1.time
-			if dt > 100 do break
+			if dt < 5 do continue
+			if dt > 50 do break
 
 			key := Key {
 				f1 = p1.freq,
@@ -48,7 +49,8 @@ recognize_peaks :: proc(peaks: []Peak) -> []Match {
 	for p1, i in peaks {
 		for p2 in peaks[i + 1:] {
 			dt := p2.time - p1.time
-			if dt > 100 do break
+			if dt < 5 do continue
+			if dt > 50 do break
 
 			key := Key {
 				f1 = p1.freq,
@@ -78,7 +80,7 @@ recognize_peaks :: proc(peaks: []Peak) -> []Match {
 		current := candidates[i]
 		start := i
 
-		for i < len(candidates) && candidates[i].id == current.id && candidates[i].time - current.time <= 5 {
+		for i < len(candidates) && candidates[i].id == current.id && candidates[i].time - current.time <= 1 {
 			i += 1
 		}
 
