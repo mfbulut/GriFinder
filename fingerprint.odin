@@ -1,5 +1,4 @@
 package main
-
 import "core:fmt"
 import "core:slice"
 
@@ -14,7 +13,7 @@ Key :: bit_field u32 {
 	dt: u32 | 8,
 }
 
-database: map[Key][dynamic]Entry
+database: map[Key]Entry
 
 index_peaks :: proc(id: u32, peaks: []Peak) {
 	for p1, i in peaks {
@@ -22,23 +21,23 @@ index_peaks :: proc(id: u32, peaks: []Peak) {
 			dt := p2.time - p1.time
 			if dt > 100 do break
 
-
-			key := Key {
+			key := Key{
 				f1 = p1.freq,
 				f2 = p2.freq,
 				dt = dt,
 			}
 
-			if key not_in database {
-				database[key] = make([dynamic]Entry)
-			}
-
-			append(&database[key], Entry{id = id, time = i32(p1.time)})
+			database[key] = Entry{id = id, time = i32(p1.time)}
 		}
 	}
 }
 
-recognize_peaks :: proc(peaks: []Peak) {
+Match :: struct {
+	entry: Entry,
+	count: u32,
+}
+
+recognize_peaks :: proc(peaks: []Peak) -> []Match {
 	candidates := make([dynamic]Entry)
 
 	for p1, i in peaks {
@@ -46,19 +45,17 @@ recognize_peaks :: proc(peaks: []Peak) {
 			dt := p2.time - p1.time
 			if dt > 100 do break
 
-			key := Key {
+			key := Key{
 				f1 = p1.freq,
 				f2 = p2.freq,
 				dt = dt,
 			}
 
-			if entries, ok := database[key]; ok {
-				for entry in entries {
-					append(&candidates, Entry{
-						id     = entry.id,
-						time = i32(entry.time) - i32(p1.time),
-					})
-				}
+			if entry, ok := database[key]; ok {
+				append(&candidates, Entry{
+					id   = entry.id,
+					time = i32(entry.time) - i32(p1.time),
+				})
 			}
 		}
 	}
@@ -68,36 +65,25 @@ recognize_peaks :: proc(peaks: []Peak) {
 		return i.time < j.time
 	})
 
-	best: Entry
-	best_count: u32
+	matches := make([dynamic]Match)
 
-	current: Entry
-	current_count: u32
+	for i := 0; i < len(candidates); {
+		current := candidates[i]
+		start := i
 
-	for c in candidates {
-		if current_count > 0 && c == current {
-			current_count += 1
-			continue
+		for i < len(candidates) && candidates[i].id == current.id && candidates[i].time - current.time <= 3 {
+			i += 1
 		}
 
-		if current_count > best_count {
-			best_count = current_count
-			best = current
+		count := u32(i - start)
+		if count > 100 {
+			append(&matches, Match{current, count})
 		}
-
-		current_count = 1
-		current = c
 	}
 
-	if current_count > best_count {
-		best_count = current_count
-		best = current
-	}
+	slice.sort_by(matches[:], proc(i, j: Match) -> bool {
+		return i.count > j.count
+	})
 
-	if best_count > 100 {
-		seconds := best.time * HOP_SIZE / SAMPLE_RATE
-		fmt.printfln("%v (at %02d:%02d) %v matches", songs[best.id], seconds / 60, seconds % 60, best_count)
-	} else {
-		fmt.printfln("No song is recognized")
-	}
+	return matches[:]
 }
