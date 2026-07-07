@@ -5,8 +5,8 @@ import "base:intrinsics"
 import "core:math"
 import "core:slice"
 
-FFT_SIZE :: 4096
-FFT_BITS :: 12
+FFT_SIZE :: 2048
+FFT_BITS :: 11
 HOP_SIZE :: 512
 
 fft_buffer: [FFT_SIZE]complex64
@@ -16,7 +16,7 @@ hann_table: [FFT_SIZE]f32
 @(init)
 fft_init :: proc "contextless" () {
 	for i in 0 ..< FFT_SIZE {
-		hann_table[i] = 0.54 - 0.46 * math.cos(2.0 * math.PI *  f32(i) / (FFT_SIZE - 1.0));
+		hann_table[i] = 0.5 - 0.5 * math.cos(2.0 * math.PI * f32(i) / (FFT_SIZE - 1.0))
 	}
 
 	for i in 0 ..< FFT_SIZE / 2 {
@@ -61,6 +61,10 @@ samples_to_spectrogram :: proc(samples: []f32) -> [][]f32 {
 
 		freqs = make([]f32, FFT_SIZE / 2)
 		for &freq, i in freqs {
+			if i < 26 {
+				freq = -1000.0 // Cut everything below ~150Hz
+				continue
+			}
 			c := fft_buffer[i]
 			mag := math.sqrt(real(c) * real(c) + imag(c) * imag(c))
 			freq = 20.0 * math.ln(mag + math.F32_EPSILON) / math.LN10
@@ -78,35 +82,33 @@ Peak :: struct {
 spectrogram_to_peaks :: proc(spectrogram: [][]f32) -> []Peak {
 	peaks := make([dynamic]Peak)
 
-	bands := [?]int{0, 40, 80, 160, 320, 640, 2048}
+	time_frames := len(spectrogram)
+	freq_bins := len(spectrogram[0])
 
-	for &freqs, t in spectrogram {
-		Max :: struct {
-			mag:  f32,
-			freq: u32,
-		}
-		maxes: [6]Max
+	BLOCK_SIZE :: 15
 
-		for i in 0 ..< len(bands) - 1 {
-			min_freq := bands[i]
-			max_freq := bands[i + 1]
-			index := min_freq + slice.max_index(freqs[min_freq:max_freq])
-			maxes[i] = Max{freqs[index], u32(index)}
-		}
+	for t := 0; t < time_frames; t += BLOCK_SIZE {
+		for f := 0; f < freq_bins; f += BLOCK_SIZE {
+			max_mag := f32(-10000.0)
+			max_t := t
+			max_f := f
 
-		sum_mag := f32(0)
-		for m in maxes {
-			sum_mag += m.mag
-		}
-		avg_mag := sum_mag / f32(len(maxes))
+			t_end := min(time_frames, t + BLOCK_SIZE)
+			f_end := min(freq_bins, f + BLOCK_SIZE)
 
-		for m in maxes {
-			if m.mag > avg_mag {
-				p := Peak {
-					time = u32(t),
-					freq = m.freq,
+			for dt in t ..< t_end {
+				for df in f ..< f_end {
+					mag := spectrogram[dt][df]
+					if mag > max_mag {
+						max_mag = mag
+						max_t = dt
+						max_f = df
+					}
 				}
-				append(&peaks, p)
+			}
+
+			if max_mag > -1000.0 {
+				append(&peaks, Peak{u32(max_t), u32(max_f)})
 			}
 		}
 	}

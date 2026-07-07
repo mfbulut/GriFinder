@@ -1,7 +1,7 @@
 package main
 
-import "core:os"
 import "core:fmt"
+import "core:os"
 import "core:strings"
 
 songs: map[i32]string
@@ -9,18 +9,24 @@ songs: map[i32]string
 main :: proc() {
 	index_songs()
 	fmt.printfln("Indexed %v songs", len(songs))
-	fmt.println("Recording for 5 seconds...\n")
+	fmt.println("Recording for 10 seconds...\n")
 
-	samples     := audio_record(5)
+	samples := audio_record(5)
 	spectrogram := samples_to_spectrogram(samples)
-	peaks       := spectrogram_to_peaks(spectrogram)
-	matches     := recognize_peaks(peaks)
+	peaks := spectrogram_to_peaks(spectrogram)
+	matches := recognize_peaks(peaks)
 
 	fmt.println("Top matches:")
 	for m, i in matches {
 		if i >= 10 do continue
 		seconds := m.entry.time * HOP_SIZE / SAMPLE_RATE
-		fmt.printfln("%v (at %02d:%02d) %v matches", songs[m.entry.id], seconds / 60, seconds % 60, m.count)
+		fmt.printfln(
+			"%v (at %02d:%02d) %v matches",
+			songs[m.entry.id],
+			seconds / 60,
+			seconds % 60,
+			m.count,
+		)
 	}
 }
 
@@ -39,4 +45,3 @@ index_songs :: proc() {
 		id += 1
 	}
 }
-

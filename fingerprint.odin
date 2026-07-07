@@ -8,9 +8,9 @@ Entry :: struct {
 }
 
 Key :: bit_field u32 {
-	f1: u32 | 12,
-	f2: u32 | 12,
-	dt: u32 | 8,
+	dt: u32 | 14,
+	f2: u32 | 9,
+	f1: u32 | 9,
 }
 
 database: map[Key][dynamic]Entry
@@ -20,11 +20,11 @@ index_peaks :: proc(id: i32, peaks: []Peak) {
 		for p2 in peaks[i + 1:] {
 			dt := p2.time - p1.time
 			if dt < 5 do continue
-			if dt > 50 do break
+			if dt > 100 do break
 
 			key := Key {
-				f1 = p1.freq,
-				f2 = p2.freq,
+				f1 = p1.freq / 2,
+				f2 = p2.freq / 2,
 				dt = dt,
 			}
 
@@ -32,7 +32,7 @@ index_peaks :: proc(id: i32, peaks: []Peak) {
 				database[key] = make([dynamic]Entry)
 			}
 
-			append(&database[key], Entry{id = id, time = i32(p1.time)})
+			append(&database[key], Entry{id, i32(p1.time)})
 		}
 	}
 }
@@ -43,50 +43,35 @@ Match :: struct {
 }
 
 recognize_peaks :: proc(peaks: []Peak) -> []Match {
-	candidates := make([dynamic]Entry)
+	counts := make(map[Entry]u32)
 
 	for p1, i in peaks {
 		for p2 in peaks[i + 1:] {
 			dt := p2.time - p1.time
 			if dt < 5 do continue
-			if dt > 50 do break
+			if dt > 100 do break
 
 			key := Key {
-				f1 = p1.freq,
-				f2 = p2.freq,
+				f1 = p1.freq / 2,
+				f2 = p2.freq / 2,
 				dt = dt,
 			}
 
 			if entries, ok := database[key]; ok {
 				for entry in entries {
-					append(&candidates, Entry{
-						id = entry.id,
-						time = i32(entry.time) - i32(p1.time),
-					})
+					diff := i32(entry.time) - i32(p1.time)
+					counts[{entry.id, diff - 1}] += 1
+					counts[{entry.id, diff}] += 1
+					counts[{entry.id, diff + 1}] += 1
 				}
 			}
 		}
 	}
 
-	slice.sort_by(candidates[:], proc(i, j: Entry) -> bool {
-		if i.id != j.id do return i.id < j.id
-		return i.time < j.time
-	})
-
 	matches := make([dynamic]Match)
 
-	for i := 0; i < len(candidates); {
-		current := candidates[i]
-		start := i
-
-		for i < len(candidates) && candidates[i].id == current.id && candidates[i].time - current.time <= 1 {
-			i += 1
-		}
-
-		count := u32(i - start)
-		if count > 100 {
-			append(&matches, Match{current, count})
-		}
+	for match, count in counts {
+		append(&matches, Match{entry = match, count = count})
 	}
 
 	slice.sort_by(matches[:], proc(i, j: Match) -> bool {
