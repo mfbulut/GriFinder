@@ -9,7 +9,7 @@ songs: map[i32]string
 main :: proc() {
 	index_songs()
 	fmt.printfln("Indexed %v songs", len(songs))
-	fmt.println("Recording for 10 seconds...\n")
+	fmt.println("Recording for 5 seconds...\n")
 
 	samples := audio_record(5)
 	spectrogram := samples_to_spectrogram(samples)

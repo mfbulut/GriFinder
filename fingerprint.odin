@@ -19,7 +19,6 @@ index_peaks :: proc(id: i32, peaks: []Peak) {
 	for p1, i in peaks {
 		for p2 in peaks[i + 1:] {
 			dt := p2.time - p1.time
-			if dt < 5 do continue
 			if dt > 100 do break
 
 			key := Key {
@@ -48,7 +47,6 @@ recognize_peaks :: proc(peaks: []Peak) -> []Match {
 	for p1, i in peaks {
 		for p2 in peaks[i + 1:] {
 			dt := p2.time - p1.time
-			if dt < 5 do continue
 			if dt > 100 do break
 
 			key := Key {
@@ -58,11 +56,11 @@ recognize_peaks :: proc(peaks: []Peak) -> []Match {
 			}
 
 			if entries, ok := database[key]; ok {
-				for entry in entries {
-					diff := i32(entry.time) - i32(p1.time)
-					counts[{entry.id, diff - 1}] += 1
-					counts[{entry.id, diff}] += 1
-					counts[{entry.id, diff + 1}] += 1
+				for e in entries {
+					diff := i32(e.time) - i32(p1.time)
+					counts[{e.id, diff - 1}] += 1
+					counts[{e.id, diff + 0}] += 1
+					counts[{e.id, diff + 1}] += 1
 				}
 			}
 		}
@@ -71,7 +69,7 @@ recognize_peaks :: proc(peaks: []Peak) -> []Match {
 	matches := make([dynamic]Match)
 
 	for match, count in counts {
-		append(&matches, Match{entry = match, count = count})
+		append(&matches, Match{match, count})
 	}
 
 	slice.sort_by(matches[:], proc(i, j: Match) -> bool {
