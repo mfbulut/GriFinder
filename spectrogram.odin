@@ -61,13 +61,8 @@ samples_to_spectrogram :: proc(samples: []f32) -> [][]f32 {
 
 		freqs = make([]f32, FFT_SIZE / 2)
 		for &freq, i in freqs {
-			if i < 26 {
-				freq = -1000.0 // Cut everything below ~150Hz
-				continue
-			}
 			c := fft_buffer[i]
-			mag := math.sqrt(real(c) * real(c) + imag(c) * imag(c))
-			freq = 20.0 * math.ln(mag + math.F32_EPSILON) / math.LN10
+			freq = math.sqrt(real(c) * real(c) + imag(c) * imag(c))
 		}
 	}
 
@@ -107,9 +102,7 @@ spectrogram_to_peaks :: proc(spectrogram: [][]f32) -> []Peak {
 				}
 			}
 
-			if max_mag > -1000.0 {
-				append(&peaks, Peak{u32(max_t), u32(max_f)})
-			}
+			append(&peaks, Peak{u32(max_t), u32(max_f)})
 		}
 	}
 
